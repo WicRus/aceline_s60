@@ -1,0 +1,593 @@
+diff --git a/arch/arm/dts/sun8i-v3-dv8000-ov8865.dts b/arch/arm/dts/sun8i-v3-dv8000-ov8865.dts
+new file mode 100644
+index 0000000000..3b33cea7c6
+--- /dev/null
++++ b/arch/arm/dts/sun8i-v3-dv8000-ov8865.dts
+@@ -0,0 +1,364 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR X11)
++/*
++ * Copyright 2020 Paul Kocialkowski <contact@paulk.fr>
++ */
++
++/dts-v1/;
++
++#include "sun8i-v3.dtsi"
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++
++/ {
++	model = "DV8000 Action Camera with OV8865";
++	compatible = "allwinner,dv8000-ov8865", "allwinner,dv8000",
++		     "allwinner,sun8i-v3";
++
++	aliases {
++		serial0 = &uart1;
++		ethernet0 = &xr819;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	cpu0_opp_table: opp-table-cpu {
++		compatible = "operating-points-v2";
++		opp-shared;
++
++		opp-120000000 {
++			opp-hz = /bits/ 64 <120000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-240000000 {
++			opp-hz = /bits/ 64 <240000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-312000000 {
++			opp-hz = /bits/ 64 <312000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-408000000 {
++			opp-hz = /bits/ 64 <408000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-480000000 {
++			opp-hz = /bits/ 64 <480000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-504000000 {
++			opp-hz = /bits/ 64 <504000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-600000000 {
++			opp-hz = /bits/ 64 <600000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-648000000 {
++			opp-hz = /bits/ 64 <648000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-720000000 {
++			opp-hz = /bits/ 64 <720000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-816000000 {
++			opp-hz = /bits/ 64 <816000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-912000000 {
++			opp-hz = /bits/ 64 <912000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-1008000000 {
++			opp-hz = /bits/ 64 <1008000000>;
++			opp-microvolt = <1200000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++	};
++
++	reg_vcc5v0: vcc5v0 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++	};
++
++	reg_vcc_wifi: reg_vcc_wifi {
++		compatible = "regulator-fixed";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-name = "vcc-wifi";
++		gpio = <&pio 1 2 GPIO_ACTIVE_HIGH>;	// PB2 WIFI_POWER_EN
++		startup-delay-ms = <200>;
++		enable-active-high;
++	};
++
++	wifi_pwrseq: wifi_pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		reset-gpios = <&pio 1 10 GPIO_ACTIVE_LOW>;  // PB10 WIFI_RESTN
++		post-power-on-delay-ms = <250>;
++	};
++
++	ov8865_avdd: ov8865-avdd {
++		compatible = "regulator-fixed";
++		regulator-name = "ov8865-avdd";
++		regulator-min-microvolt = <2800000>;
++		regulator-max-microvolt = <2800000>;
++		vin-supply = <&reg_ldo3>;
++	};
++
++	ov8865_dovdd: ov8865-dovdd {
++		compatible = "regulator-fixed";
++		regulator-name = "ov8865-dovdd";
++		regulator-min-microvolt = <2800000>;
++		regulator-max-microvolt = <2800000>;
++		vin-supply = <&reg_ldo3>;
++	};
++
++	ov8865_dvdd: ov8865-dvdd {
++		compatible = "regulator-fixed";
++		regulator-name = "ov8865-dvdd";
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <1200000>;
++		vin-supply = <&reg_ldo3>;
++	};
++};
++
++&cpu0 {
++	clock-names = "cpu";
++	clock-frequency = <1008000000>;
++	operating-points-v2 = <&cpu0_opp_table>;
++	cpu-supply = <&reg_dcdc2>;
++};
++
++&i2c0 {
++	status = "okay";
++
++	axp209: pmic@34 {
++		reg = <0x34>;
++		interrupt-parent = <&nmi_intc>;
++		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
++	};
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pe_pins>;
++	status = "okay";
++};
++
++&lradc {
++	vref-supply = <&reg_ldo2>;
++	status = "okay";
++
++	button-174 {
++		label = "Down";
++		linux,code = <KEY_DOWN>;
++		channel = <0>;
++		voltage = <174603>;
++	};
++
++	button-384 {
++		label = "Up";
++		linux,code = <KEY_UP>;
++		channel = <0>;
++		voltage = <384126>;
++	};
++
++	button-593 {
++		label = "OK";
++		linux,code = <KEY_OK>;
++		channel = <0>;
++		voltage = <593650>;
++	};
++};
++
++&mmc0 {
++	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
++	bus-width = <4>;
++	vmmc-supply = <&reg_dcdc3>;
++	status = "okay";
++};
++
++&mmc1 {
++	vqmmc-supply = <&reg_vcc_wifi>;
++	vmmc-supply = <&reg_dcdc3>;
++	mmc-pwrseq = <&wifi_pwrseq>;
++	bus-width = <4>;
++	non-removable;
++	status = "okay";
++
++	xr819: xr819wifi@1 {
++		reg = <1>;
++		compatible = "xradio,xr819";
++		pinctrl-names = "default";
++		pinctrl-0 = <&wifi_wake>;
++		interrupt-parent = <&pio>;
++		interrupts = <1 0 IRQ_TYPE_EDGE_RISING>;
++		interrupt-names = "host-wake";
++		local-mac-address = [dc 44 6d c0 ff ee];
++	};
++};
++
++&pio {
++	wifi_wake: wifi_wake {
++		pins = "PB0";
++		function = "gpio_in";
++	};
++};
++
++&pio {
++	vcc-pd-supply = <&reg_dcdc3>;
++};
++
++#include "axp209.dtsi"
++
++&ac_power_supply {
++	status = "okay";
++};
++
++&battery_power_supply {
++	status = "okay";
++};
++
++&reg_dcdc2 {
++	regulator-always-on;
++	regulator-min-microvolt = <1025000>;
++	regulator-max-microvolt = <1225000>;
++	regulator-name = "vdd-sys-cpu";
++	regulator-ramp-delay = <50>;		/* 4ms */
++};
++
++&reg_dcdc3 {
++	regulator-always-on;
++	regulator-min-microvolt = <3300000>;
++	regulator-max-microvolt = <3300000>;
++	regulator-name = "vdd-3v3";
++};
++
++&reg_ldo1 {
++	regulator-name = "vdd-rtc";
++};
++
++&reg_ldo2 {
++	regulator-always-on;
++	regulator-min-microvolt = <3000000>;
++	regulator-max-microvolt = <3000000>;
++	regulator-name = "avcc";
++};
++
++&reg_ldo3 {
++	regulator-always-on;
++	regulator-min-microvolt = <2700000>;
++	regulator-max-microvolt = <2700000>;
++	regulator-name = "vcc-pe";
++};
++
++&spi0 {
++	status = "okay";
++
++	flash@0 {
++		reg = <0>;
++		compatible = "jedec,spi-nor";
++		spi-max-frequency = <50000000>;
++	};
++};
++
++&uart1 {
++	pinctrl-0 = <&uart1_pg_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
++&usb_otg {
++	dr_mode = "peripheral";
++	status = "okay";
++};
++
++&usbphy {
++	status = "okay";
++};
++
++&ccu {
++	assigned-clocks = <&ccu CLK_CSI0_MCLK>;
++	assigned-clock-parents = <&osc24M>;
++	assigned-clock-rates = <24000000>;
++};
++
++&isp {
++	status = "okay";
++};
++
++&csi0 {
++	status = "okay";
++};
++
++&dphy {
++	status = "okay";
++};
++
++&mipi_csi2 {
++	status = "okay";
++};
++
++&i2c1 {
++	ov8865: camera@6c {
++		compatible = "ovti,ov8865";
++		reg = <0x6c>; /* vip_dev0_twi_addr = 0x6c */
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&csi0_mclk_pin>;
++
++		clocks = <&ccu CLK_CSI0_MCLK>;
++		assigned-clocks = <&ccu CLK_CSI0_MCLK>;
++		assigned-clock-parents = <&osc24M>;
++		assigned-clock-rates = <24000000>;
++
++		avdd-supply = <&ov8865_avdd>;
++		dovdd-supply = <&ov8865_dovdd>;
++		dvdd-supply = <&ov8865_dvdd>;
++
++		powerdown-gpios = <&pio 4 19 GPIO_ACTIVE_LOW>; /* PE19 */
++		reset-gpios = <&pio 4 18 GPIO_ACTIVE_LOW>; /* PE18 */
++
++		port {
++			ov8865_out_mipi_csi2: endpoint {
++				remote-endpoint = <&mipi_csi2_in_ov8865>;
++				link-frequencies = /bits/ 64 <360000000>;
++				data-lanes = <1 2 3 4>;
++			};
++		};
++	};
++};
++
++&mipi_csi2_in {
++	mipi_csi2_in_ov8865: endpoint {
++		remote-endpoint = <&ov8865_out_mipi_csi2>;
++		data-lanes = <1 2 3 4>;
++	};
++};
+diff --git a/arch/arm/dts/sun8i-v3s.dtsi b/arch/arm/dts/sun8i-v3s.dtsi
+index 9e13c2aa89..12f0c826a8 100644
+--- a/arch/arm/dts/sun8i-v3s.dtsi
++++ b/arch/arm/dts/sun8i-v3s.dtsi
+@@ -71,7 +71,7 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		cpu@0 {
++		cpu0: cpu@0 {
+ 			compatible = "arm,cortex-a7";
+ 			device_type = "cpu";
+ 			reg = <0>;
+@@ -614,6 +614,21 @@
+ 			};
+ 		};
+ 
++		mbus: dram-controller@1c62000 {
++			compatible = "allwinner,sun8i-v3s-mbus";
++			reg = <0x01c62000 0x1000>,
++			      <0x01c63000 0x1000>;
++			reg-names = "mbus", "dram";
++			clocks = <&ccu CLK_MBUS>,
++				 <&ccu CLK_DRAM>,
++				 <&ccu CLK_BUS_DRAM>;
++			clock-names = "mbus", "dram", "bus";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			dma-ranges = <0x00000000 0x40000000 0x80000000>;
++			#interconnect-cells = <1>;
++		};
++
+ 		spi0: spi@1c68000 {
+ 			compatible = "allwinner,sun8i-h3-spi";
+ 			reg = <0x01c68000 0x1000>;
+@@ -641,6 +656,85 @@
+ 			interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+ 		};
+ 
++		csi0: camera@1cb0000 {
++			compatible = "allwinner,sun8i-v3s-csi";
++			reg = <0x01cb0000 0x1000>;
++			interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_CSI>,
++				 <&ccu CLK_CSI1_SCLK>,
++				 <&ccu CLK_DRAM_CSI>;
++			clock-names = "bus", "mod", "ram";
++			resets = <&ccu RST_BUS_CSI>;
++			interconnects = <&mbus 5>;
++			interconnect-names = "dma-mem";
++			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				port@1 {
++					reg = <1>;
++
++					csi0_in_mipi_csi2: endpoint {
++						remote-endpoint = <&mipi_csi2_out_csi0>;
++					};
++				};
++
++				port@2 {
++					reg = <2>;
++
++					csi0_out_isp: endpoint {
++						remote-endpoint = <&isp_in_csi0>;
++					};
++				};
++			};
++		};
++
++		mipi_csi2: csi@1cb1000 {
++			compatible = "allwinner,sun8i-v3s-mipi-csi2",
++				     "allwinner,sun6i-a31-mipi-csi2";
++			reg = <0x01cb1000 0x1000>;
++			interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_CSI>,
++				 <&ccu CLK_CSI1_SCLK>;
++			clock-names = "bus", "mod";
++			resets = <&ccu RST_BUS_CSI>;
++			status = "disabled";
++
++			phys = <&dphy>;
++			phy-names = "dphy";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				mipi_csi2_in: port@0 {
++					reg = <0>;
++				};
++
++				mipi_csi2_out: port@1 {
++					reg = <1>;
++
++					mipi_csi2_out_csi0: endpoint {
++						remote-endpoint = <&csi0_in_mipi_csi2>;
++					};
++				};
++			};
++		};
++
++		dphy: d-phy@1cb2000 {
++			compatible = "allwinner,sun6i-a31-mipi-dphy";
++			reg = <0x01cb2000 0x1000>;
++			clocks = <&ccu CLK_BUS_CSI>,
++				 <&ccu CLK_MIPI_CSI>;
++			clock-names = "bus", "mod";
++			resets = <&ccu RST_BUS_CSI>;
++			allwinner,direction = "rx";
++			status = "disabled";
++			#phy-cells = <0>;
++		};
++
+ 		csi1: camera@1cb4000 {
+ 			compatible = "allwinner,sun8i-v3s-csi";
+ 			reg = <0x01cb4000 0x3000>;
+@@ -652,5 +746,32 @@
+ 			resets = <&ccu RST_BUS_CSI>;
+ 			status = "disabled";
+ 		};
++
++		isp: isp@1cb8000 {
++			compatible = "allwinner,sun8i-v3s-isp";
++			reg = <0x01cb8000 0x1000>;
++			interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_CSI>,
++				 <&ccu CLK_CSI1_SCLK>,
++				 <&ccu CLK_DRAM_CSI>;
++			clock-names = "bus", "mod", "ram";
++			resets = <&ccu RST_BUS_CSI>;
++			interconnects = <&mbus 5>;
++			interconnect-names = "dma-mem";
++			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				port@0 {
++					reg = <0>;
++
++					isp_in_csi0: endpoint {
++						remote-endpoint = <&csi0_out_isp>;
++					};
++				};
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/mach-sunxi/board.c b/arch/arm/mach-sunxi/board.c
+index 701899ee4b..81b3340040 100644
+--- a/arch/arm/mach-sunxi/board.c
++++ b/arch/arm/mach-sunxi/board.c
+@@ -142,6 +142,10 @@ static int gpio_init(void)
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPB(8), SUN8I_V3S_GPB_UART0);
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPB(9), SUN8I_V3S_GPB_UART0);
+ 	sunxi_gpio_set_pull(SUNXI_GPB(9), SUNXI_GPIO_PULL_UP);
++#elif CONFIG_CONS_INDEX == 2 && defined(CONFIG_MACH_SUN8I_V3S)
++	sunxi_gpio_set_cfgpin(SUNXI_GPG(6), SUN8I_V3S_GPG_UART1);
++	sunxi_gpio_set_cfgpin(SUNXI_GPG(7), SUN8I_V3S_GPG_UART1);
++	sunxi_gpio_set_pull(SUNXI_GPG(7), SUNXI_GPIO_PULL_UP);
+ #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN9I)
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPH(12), SUN9I_GPH_UART0);
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPH(13), SUN9I_GPH_UART0);
+diff --git a/configs/sun8i_v3_dv8000_ov8865_defconfig b/configs/sun8i_v3_dv8000_ov8865_defconfig
+new file mode 100644
+index 0000000000..01d8dad019
+--- /dev/null
++++ b/configs/sun8i_v3_dv8000_ov8865_defconfig
+@@ -0,0 +1,14 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-v3-dv8000-ov8865"
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_V3S=y
++CONFIG_SUNXI_DRAM_DDR3=y
++CONFIG_SUNXI_DRAM_DDR3_1333=y
++CONFIG_DRAM_ODT_EN=y
++CONFIG_DRAM_CLK=648
++CONFIG_CMD_BOOTMENU=y
++CONFIG_CONS_INDEX=2
++
++CONFIG_ARMV7_BOOT_SEC_DEFAULT=y
++CONFIG_PREBOOT="setenv fdt_addr_r 0x41900000"
+diff --git a/include/dt-bindings/clock/sun8i-v3s-ccu.h b/include/dt-bindings/clock/sun8i-v3s-ccu.h
+index 014ac6123d..4231f23bc5 100644
+--- a/include/dt-bindings/clock/sun8i-v3s-ccu.h
++++ b/include/dt-bindings/clock/sun8i-v3s-ccu.h
+@@ -87,7 +87,7 @@
+ #define CLK_SPI0		55
+ #define CLK_USB_PHY0		56
+ #define CLK_USB_OHCI0		57
+-
++#define CLK_DRAM		58
+ #define CLK_DRAM_VE		59
+ #define CLK_DRAM_CSI		60
+ #define CLK_DRAM_EHCI		61
+@@ -101,7 +101,7 @@
+ #define CLK_VE			69
+ #define CLK_AC_DIG		70
+ #define CLK_AVS			71
+-
++#define CLK_MBUS		72
+ #define CLK_MIPI_CSI		73
+ 
+ /* Clocks not available on V3s */
+diff --git a/include/sunxi_gpio.h b/include/sunxi_gpio.h
+index 122987c395..e5f8685db3 100644
+--- a/include/sunxi_gpio.h
++++ b/include/sunxi_gpio.h
+@@ -119,6 +119,7 @@ enum sunxi_gpio_number {
+ #define SUN8I_A33_GPB_UART0	3
+ #define SUN8I_A83T_GPB_UART0	2
+ #define SUN8I_V3S_GPB_UART0	3
++#define SUN8I_V3S_GPG_UART1	2
+ #define SUN50I_GPB_UART0	4
+ 
+ #define SUNXI_GPC_NAND		2

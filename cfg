@@ -1,0 +1,98 @@
+CUR_PATH="$(dirname $(realpath $0))"
+SDK_PATH="$CUR_PATH/sdk"
+BIN_PATH="$SDK_PATH/binary"
+MNT_PATH="$SDK_PATH/img_mnt"
+KCUR_PATH="$BIN_PATH/current_kernel"
+FWS_PATH="$CUR_PATH/firmware"
+
+USER_ID="$(id -u)"
+GRP_ID="$(id -g)"
+TAG="allwinner_v3_$USER_ID"
+IMG="u24"
+W_DIR="/sdk"
+
+MOUNT="-v $CUR_PATH:$W_DIR -v /dev:/dev "
+WORKD="-w $W_DIR"
+D_USER="-u $USER_ID:$GRP_ID"
+FLAGS="\
+  -it --rm --privileged=true \
+  $MOUNT \
+  $WORKD \
+  $D_USER
+"
+
+ARCH_IMG_DIR="$SDK_PATH/arch"
+ARCH_IMG_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-armv7-latest.tar.gz"
+ARCH_IMG_NAME=${ARCH_IMG_URL##*/}
+ARCH_IMG_PATH=${ARCH_IMG_DIR}/${ARCH_IMG_NAME}
+ARCH_TARGET_IMAGE=$BIN_PATH/$(basename -s .tar.gz "$ARCH_IMG_NAME").img
+ARCH_TARGET_ZIP=$(basename -s .tar.gz "$ARCH_IMG_NAME").zip
+ARCH_TARGET_ZIP_MD5=${ARCH_TARGET_ZIP}.md5
+ARCH_MD5_URL=${ARCH_IMG_URL}.md5
+ARCH_MD5_NAME=${ARCH_MD5_URL##*/}
+
+CROSS_BIN=/usr/bin/arm-linux-gnueabihf-
+CROSS_ARCH=arm
+K_ARCH=$CROSS_ARCH
+export ARCH="$CROSS_ARCH"
+export CROSS_COMPILE="$CROSS_BIN"
+MAKEFLAGS="-j$(nproc)"
+
+DEV_LOOP="/dev/loop10"
+
+function __git_clone_pull {
+  local D=$(basename "$1" .git)
+  if [ -d "$D" ]; then
+    pushd "$D"
+      [ "$2" = "1" ] && git reset --hard && git clean -fdx
+      git pull
+    popd
+  else
+    git clone "$1"
+  fi
+}
+
+function __get_sudo {
+    if [ $(id -u) -ne 0 ]; then
+      sudo $0 "${@}"
+      exit $?
+    fi
+}
+
+function __init_arch_img {
+    losetup ${DEV_LOOP} && echo [${DEV_LOOP}] have been not corectly detached && exit 1 || true
+    losetup ${DEV_LOOP} "${ARCH_TARGET_IMAGE}" -P
+    mkdir -p ${MNT_PATH}
+    mount ${DEV_LOOP}p1 ${MNT_PATH}
+
+    mount --bind /sys ${MNT_PATH}/sys
+    mount --bind /proc ${MNT_PATH}/proc
+    mount --bind /dev ${MNT_PATH}/dev
+    mount -t tmpfs tmpfs ${MNT_PATH}/var/cache/pacman/pkg/
+    cp /usr/bin/qemu-arm-static ${MNT_PATH}/usr/bin/qemu-arm-static
+
+    mv ${MNT_PATH}/etc/resolv.conf ${MNT_PATH}/etc/resolv.conf.bak
+    cp /etc/resolv.conf ${MNT_PATH}/etc/resolv.conf
+
+    DISC_UUID_RAW=`blkid ${DEV_LOOP}p1 -o export | grep "\bUUID=\b"`
+    DISC_UUID=${DISC_UUID_RAW#"UUID="}
+    DISC_PARTUUID_RAW=`blkid ${DEV_LOOP}p1 -o export | grep "\PARTUUID=\b"`
+    DISC_PARTUUID=${DISC_PARTUUID_RAW#"PARTUUID="}
+    update-binfmts --enable
+}
+
+function __deinit_arch_img {
+    chroot ${MNT_PATH} bash -c "pkill -9 dirmngr; pkill -9 gpg-agent;" || true
+
+    rm ${MNT_PATH}/etc/resolv.conf
+    mv ${MNT_PATH}/etc/resolv.conf.bak ${MNT_PATH}/etc/resolv.conf
+
+    rm ${MNT_PATH}/usr/bin/qemu-arm-static
+    sleep 1
+    umount ${MNT_PATH}/var/cache/pacman/pkg/
+    umount ${MNT_PATH}/dev
+    umount ${MNT_PATH}/proc
+    umount ${MNT_PATH}/sys
+    umount ${MNT_PATH}
+    losetup -d ${DEV_LOOP}
+}
